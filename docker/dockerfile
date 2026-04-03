@@ -1,0 +1,19 @@
+FROM php:8.3-cli
+
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    libzip-dev \
+    unzip \
+    git \
+    curl \
+    && docker-php-ext-install pdo pdo_pgsql
+
+# MongoDB
+RUN pecl install mongodb \
+    && docker-php-ext-enable mongodb
+
+# Redis
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
+WORKDIR /app
