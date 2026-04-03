@@ -2,6 +2,7 @@
 
 namespace App\Storage;
 
+use App\Storage\ValueObject\BalanceStatus;
 use App\Storage\ValueObject\HealthStatus;
 use App\Storage\ValueObject\StorageMetrics;
 
@@ -81,4 +82,11 @@ interface StorageInterface
      * - redis
      */
     public static function getDriverName(): string;
+
+    /**
+     * Analyze the balance status of the storage system.
+     *
+     * @return BalanceStatus Always returns a valid object
+     */
+    public function analyzeBalance(): BalanceStatus;
 }

@@ -103,7 +103,7 @@ final class StorageFactory
  * The first driver instance is now silently pointing to db2.
  * No exception is thrown. Data goes to the wrong database.
  *
- * ## The fix
+ * ## The temporary fix
  *
  * We clone the driver before configuring it.
  * Each call to create() returns an independent instance,
