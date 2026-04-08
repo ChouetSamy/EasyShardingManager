@@ -10,9 +10,9 @@ final class CockroachMetrics implements DriverMetricsInterface
     public function __construct(
         private readonly int $rangeCount,
         private readonly int $nodeCount,
-        private readonly int $replicationFactor
-    ) {
-    }
+        private readonly int $replicationFactor,
+        private readonly array $rangeDistribution,
+    ) {}
 
     public function getRangeCount(): int
     {
@@ -29,12 +29,18 @@ final class CockroachMetrics implements DriverMetricsInterface
         return $this->replicationFactor;
     }
 
+    public function getRangeDistribution(): array
+    {
+        return $this->rangeDistribution;
+    }
+
     public function toArray(): array
     {
         return [
             'rangeCount' => $this->rangeCount,
             'nodeCount' => $this->nodeCount,
             'replicationFactor' => $this->replicationFactor,
+            'rangeDistribution' => $this->rangeDistribution,
         ];
     }
 }

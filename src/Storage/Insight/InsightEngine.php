@@ -7,50 +7,74 @@ use App\Storage\ValueObject\NormalizedMetrics;
 /**
  * InsightEngine
  *
- * Transforms normalized metrics into actionable insights.
+ * CORE INTELLIGENCE LAYER of EasyShardManager.
  *
  * PURPOSE:
- * - Provide recommendations
- * - Abstract technical complexity
- * - Enable SaaS features
+ * - Convert normalized technical metrics into business-level insights
+ * - Enable non-expert users to understand system state
+ * - Provide actionable recommendations
+ *
+ * ARCHITECTURE ROLE:
+ * DriverMetrics → NormalizedMetrics → InsightEngine → Insights
+ *
+ * FUTURE EXTENSIONS:
+ * - Alerting system
+ * - Auto-remediation
+ * - SaaS analytics
  */
 final class InsightEngine
 {
     /**
+     * Generate insights from normalized metrics.
+     *
+     * @param NormalizedMetrics $metrics
+     *
      * @return Insight[]
      */
     public function generate(NormalizedMetrics $metrics): array
     {
         $insights = [];
 
-        // 🔴 Rebalance needed
+        /**
+         * Rebalance detection
+         *
+         * If true → system detected uneven data distribution
+         */
         if ($metrics->rebalanceNeeded) {
             $insights[] = new Insight(
                 level: 'warning',
                 message: 'Le cluster est déséquilibré',
-                action: 'Lancer un rebalance automatique'
+                action: 'Lancer un rééquilibrage automatique'
             );
         }
 
-        // 🔥 High pressure
+        /**
+         * High pressure detection
+         *
+         * > 0.8 → critical
+         */
         if ($metrics->clusterPressure > 0.8) {
             $insights[] = new Insight(
                 level: 'critical',
                 message: 'Cluster sous forte charge',
-                action: 'Ajouter des ressources ou scaler'
+                action: 'Scaler horizontalement ou optimiser les requêtes'
             );
         }
 
-        // ⚠️ Medium pressure
-        if ($metrics->clusterPressure > 0.6) {
+        /**
+         * Medium pressure
+         */
+        elseif ($metrics->clusterPressure > 0.6) {
             $insights[] = new Insight(
                 level: 'warning',
                 message: 'Charge élevée détectée',
-                action: 'Surveiller le cluster'
+                action: 'Surveiller les performances'
             );
         }
 
-        // ✅ Healthy
+        /**
+         * Healthy system
+         */
         if (empty($insights)) {
             $insights[] = new Insight(
                 level: 'info',

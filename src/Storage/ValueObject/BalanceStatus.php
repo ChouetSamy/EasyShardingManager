@@ -5,31 +5,41 @@ namespace App\Storage\ValueObject;
 /**
  * BalanceStatus
  *
- * Represents the balance state of a distributed storage system.
- *
- * PURPOSE:
- * - Provide a human-readable and machine-usable diagnostic
- * - Separate analysis from action (rebalance)
+ * Represents the balance state of a cluster.
  *
  * DESIGN:
- * - Immutable Value Object
- * - Used by all storage drivers
+ * - Immutable (readonly)
+ * - Used for admin/debug endpoints
  */
 final class BalanceStatus
 {
-    /**
-     * @param bool $isBalanced
-     *  True if the cluster is considered balanced
-     *
-     * @param float $deviationPercent
-     *  Represents the maximum deviation between nodes (0 → perfect, 100 → worst)
-     *
-     * @param string $message
-     *  Human-readable explanation (for UI / logs)
-     */
     public function __construct(
-        public readonly bool $isBalanced,
-        public readonly float $deviationPercent,
-        public readonly string $message
+        private readonly bool $isBalanced,
+        private readonly float $deviationPercent,
+        private readonly string $message
     ) {}
+
+    public function isBalanced(): bool
+    {
+        return $this->isBalanced;
+    }
+
+    public function getDeviationPercent(): float
+    {
+        return $this->deviationPercent;
+    }
+
+    public function getMessage(): string
+    {
+        return $this->message;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'isBalanced' => $this->isBalanced,
+            'deviationPercent' => $this->deviationPercent,
+            'message' => $this->message,
+        ];
+    }
 }

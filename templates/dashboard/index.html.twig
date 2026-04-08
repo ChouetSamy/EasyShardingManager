@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Storage Dashboard{% endblock %}
+
+{% block stylesheets %}
+<style>
+    body { font-family: Arial; padding: 20px; }
+    .card { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+    .ok { color: green; }
+    .bad { color: red; }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>Storage Dashboard</h1>
+<select id="driver">
+    <option value="cockroach">Cockroach</option>
+    <option value="mongo">Mongo</option>
+    <option value="redis">Redis</option>
+</select>
+<input id="dsn" placeholder="DSN" size="50"/>
+<button onclick="load()">Load</button>
+<div id="output"></div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+async function load() {
+    const driver = document.getElementById('driver').value;
+    const dsn = document.getElementById('dsn').value;
+    const res = await fetch('/api/storage/full', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver, dsn })
+    });
+    const data = await res.json();
+    document.getElementById('output').innerHTML = `
+        <div class="card">
+            <h2>Health</h2>
+            <p class="${data.health.status === 'UP' ? 'ok' : 'bad'}">
+                ${data.health.status}
+            </p>
+            <p>Latency: ${data.health.latencyMs.toFixed(2)} ms</p>
+        </div>
+        <div class="card">
+            <h2>Metrics</h2>
+            <pre>${JSON.stringify(data.metrics, null, 2)}</pre>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

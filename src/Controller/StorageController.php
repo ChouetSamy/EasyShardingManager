@@ -7,6 +7,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use App\Storage\Service\MetricsTranslator;
+use App\Storage\Insight\InsightEngine;
 
 /**
  * StorageController
@@ -21,8 +23,11 @@ use Symfony\Component\HttpFoundation\Request;
 final class StorageController extends AbstractController
 {
     public function __construct(
-        private readonly StorageFactory $factory
-    ) {}
+        private readonly StorageFactory $factory,
+        private readonly MetricsTranslator $translator,
+        private readonly InsightEngine $insightEngine
+    ) {
+    }
 
     /**
      * Health check endpoint
@@ -81,9 +86,9 @@ final class StorageController extends AbstractController
         $balance = $storage->analyzeBalance();
 
         return $this->json([
-            'isBalanced' => $balance->isBalanced,
-            'deviationPercent' => $balance->deviationPercent,
-            'message' => $balance->message,
+            'isBalanced' => $balance->isBalanced(),
+            'deviationPercent' => $balance->getDeviationPercent(),
+            'message' => $balance->getMessage(),
         ]);
     }
 
@@ -109,6 +114,73 @@ final class StorageController extends AbstractController
         } catch (\Throwable $e) {
             return $this->json([
                 'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    #[Route('/insights', methods: ['POST'])]
+    public function insights(Request $request): JsonResponse
+    {
+        $config = json_decode($request->getContent(), true);
+
+        $storage = $this->factory->create($config);
+        $storage->connect();
+
+        $metrics = $storage->getMetrics();
+
+        // 🔥 étape clé
+        $normalized = $this->translator->translate(
+            $metrics->getDriverMetrics()
+        );
+
+        $insights = $this->insightEngine->generate($normalized);
+
+        return $this->json([
+            'insights' => array_map(fn($i) => [
+                'level' => $i->level,
+                'message' => $i->message,
+                'action' => $i->action
+            ], $insights)
+        ]);
+    }
+
+    #[Route('/full', methods: ['POST'])]
+    public function full(Request $request): JsonResponse
+    {
+        try {
+            $config = json_decode($request->getContent(), true);
+
+            $storage = $this->factory->create($config);
+            $storage->connect();
+
+            $health = $storage->getHealth();
+            $metrics = $storage->getMetrics();
+            $balance = $storage->analyzeBalance();
+
+            $normalized = $this->translator->translate(
+                $metrics->getDriverMetrics()
+            );
+
+            $insights = $this->insightEngine->generate($normalized);
+
+            return $this->json([
+                'health' => [
+                    'status' => $health->getStatus()->value,
+                    'latencyMs' => $health->getLatencyMs(),
+                    'error' => $health->getError(),
+                ],
+                'metrics' => $metrics->toArray(),
+                'balance' => $balance->toArray(),
+                'insights' => array_map(fn($i) => [
+                    'level' => $i->level,
+                    'message' => $i->message,
+                    'action' => $i->action
+                ], $insights)
+            ]);
+
+        } catch (\Throwable $e) {
+            return $this->json([
                 'error' => $e->getMessage()
             ], 500);
         }

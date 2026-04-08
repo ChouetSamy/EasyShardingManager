@@ -91,7 +91,6 @@ final class RedisStorage implements StorageInterface
             );
         }
     }
-
     public function getMetrics(): StorageMetrics
     {
         if ($this->client === null) {
@@ -105,22 +104,39 @@ final class RedisStorage implements StorageInterface
             $connectedClients = $info['Clients']['connected_clients'] ?? 0;
             $opsPerSec = $info['Stats']['instantaneous_ops_per_sec'] ?? 0;
 
-            $slots = $this->client->executeRaw(['CLUSTER', 'SLOTS']);
+            // Redis standalone ne supporte pas CLUSTER SLOTS
+            // On détecte le mode cluster avant d'appeler la commande
+            $clusterEnabled = false;
+            $slots = [];
+
+            try {
+                $clusterInfo = $this->client->executeRaw(['CLUSTER', 'INFO']);
+                if (is_string($clusterInfo) && str_contains($clusterInfo, 'cluster_enabled:1')) {
+                    $clusterEnabled = true;
+                    $slots = $this->client->executeRaw(['CLUSTER', 'SLOTS']);
+                    if (!is_array($slots)) {
+                        $slots = [];
+                    }
+                }
+            } catch (\Throwable) {
+                // Mode standalone — pas de cluster, on ignore
+            }
 
             $driverMetrics = new RedisMetrics(
-                memoryUsed: $memoryUsed,
-                connectedClients: $connectedClients,
-                opsPerSec: $opsPerSec,
+                memoryUsed: (int) $memoryUsed,
+                connectedClients: (int) $connectedClients,
+                opsPerSec: (int) $opsPerSec,
                 slotDistribution: $slots
             );
 
             return new StorageMetrics(
-                userCount: $connectedClients,
+                userCount: (int) $connectedClients,
                 storageDriver: 'redis',
                 regionCount: 1,
-                shardCount: \count($slots),
+                shardCount: $clusterEnabled ? count($slots) : 1,
                 driverMetrics: $driverMetrics
             );
+
         } catch (\Throwable $e) {
             throw new \RuntimeException(
                 'Failed to fetch Redis metrics: ' . $e->getMessage(),
@@ -136,7 +152,12 @@ final class RedisStorage implements StorageInterface
             throw new \RuntimeException('Not connected');
         }
 
-        return $this->client->executeRaw(['CLUSTER', 'SLOTS']);
+        try {
+            $result = $this->client->executeRaw(['CLUSTER', 'SLOTS']);
+            return is_array($result) ? $result : [];
+        } catch (\Throwable) {
+            return []; // standalone Redis — pas de slots
+        }
     }
 
     public function rebalance(string $strategy): void
@@ -146,7 +167,7 @@ final class RedisStorage implements StorageInterface
         );
     }
 
-    public function analyzeBalance():BalanceStatus
+    public function analyzeBalance(): BalanceStatus
     {
         return new BalanceStatus(
             true,
