@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_pgsql
 
 # MongoDB
-RUN pecl install mongodb \
+RUN pecl install mongodb-1.17.0 \
     && docker-php-ext-enable mongodb
 
 # Redis
