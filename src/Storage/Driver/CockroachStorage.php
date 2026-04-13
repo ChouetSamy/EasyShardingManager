@@ -25,6 +25,7 @@ use Doctrine\DBAL\DriverManager;
 final class CockroachStorage implements StorageInterface
 {
     private ?Connection $connection = null;
+
     private ?string $dsn = null;
 
     public static function getDriverName(): string
@@ -45,8 +46,17 @@ final class CockroachStorage implements StorageInterface
     {
         try {
             $this->connection = DriverManager::getConnection([
-                'url' => $this->dsn,
+                'driver' => 'pdo_pgsql',
+                'host' => 'cockroachdb',
+                'port' => 26257,
+                'user' => 'root',
+                'dbname' => 'defaultdb',
+                'sslmode' => 'disable',
             ]);
+
+            $this->connection->executeStatement(
+                'SET allow_unsafe_internals = true'
+            );
 
             $this->connection->executeQuery('SELECT 1');
 
@@ -58,7 +68,6 @@ final class CockroachStorage implements StorageInterface
             );
         }
     }
-
     public function getHealth(): HealthStatus
     {
         $start = microtime(true);
@@ -104,16 +113,16 @@ final class CockroachStorage implements StorageInterface
              * 🔥 CRITICAL: raw distribution
              */
             $distribution = $this->connection->fetchAllAssociative(
-                'SELECT node_id, count(*) as range_count 
+                'SELECT lease_holder as node_id, count(*) as range_count 
                  FROM crdb_internal.ranges 
-                 GROUP BY node_id'
+                 GROUP BY lease_holder'
             );
 
             $driverMetrics = new CockroachMetrics(
                 rangeCount: $rangeCount,
                 nodeCount: \count($distribution),
                 replicationFactor: 3,
-                rangeDistribution: $distribution // 🔥 utilisé par Translator
+                rangeDistribution: $distribution // pour être traduit par translator ensuite
             );
 
             return new StorageMetrics(
@@ -195,8 +204,8 @@ final class CockroachStorage implements StorageInterface
             $maxDeviation < 0.2,
             $maxDeviation * 100,
             $maxDeviation < 0.2
-                ? 'Cluster équilibré'
-                : \sprintf('Cluster déséquilibré (%.2f%%)', $maxDeviation * 100)
+            ? 'Cluster équilibré'
+            : \sprintf('Cluster déséquilibré (%.2f%%)', $maxDeviation * 100)
         );
     }
 }
