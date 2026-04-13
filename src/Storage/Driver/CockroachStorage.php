@@ -111,7 +111,7 @@ final class CockroachStorage implements StorageInterface
 
             $driverMetrics = new CockroachMetrics(
                 rangeCount: $rangeCount,
-                nodeCount: count($distribution),
+                nodeCount: \count($distribution),
                 replicationFactor: 3,
                 rangeDistribution: $distribution // 🔥 utilisé par Translator
             );
@@ -182,7 +182,7 @@ final class CockroachStorage implements StorageInterface
         }
 
         $counts = array_column($rows, 'range_count');
-        $avg = array_sum($counts) / count($counts);
+        $avg = array_sum($counts) / \count($counts);
 
         $maxDeviation = 0;
 
@@ -196,7 +196,7 @@ final class CockroachStorage implements StorageInterface
             $maxDeviation * 100,
             $maxDeviation < 0.2
                 ? 'Cluster équilibré'
-                : sprintf('Cluster déséquilibré (%.2f%%)', $maxDeviation * 100)
+                : \sprintf('Cluster déséquilibré (%.2f%%)', $maxDeviation * 100)
         );
     }
 }

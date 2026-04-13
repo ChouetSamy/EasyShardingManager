@@ -1,14 +1,10 @@
-version: '3.8'
+
 services:
   app:
     build: .
-    ports: ["8000:8000"]
-    volumes: [".:/app"]
-
-  cockroachdb:
-    image: cockroachdb/cockroach:latest
-    command: start-single-node --insecure
-    ports: ["26257:26257", "8080:8080"]
+    ports: ["8001:8000"]
+    volumes: ["..:/app"]
+    command: php -S 0.0.0.0:8000 -t public
 
   mongodb:
     image: mongo:7
@@ -16,10 +12,20 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["6380:6379"]
 
   grafana:
     image: grafana/grafana:latest
     ports: ["3001:3000"]
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
+
+  cockroachdb:
+    image: cockroachdb/cockroach:latest
+    command: start-single-node --insecure
+    ports: ["26257:26257", "8080:8080"]
+    volumes:
+      - cockroach-data:/cockroach/cockroach-data
+
+volumes:
+  cockroach-data:
