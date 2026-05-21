@@ -1,5 +1,5 @@
 <?php
-
+//used to convert driver name to it's dsn name
 namespace App\Storage;
 
 class DriverMap
