@@ -108,32 +108,40 @@ final class CockroachStorage implements StorageInterface
         }
 
         try {
-            // nombre de ranges
-            $rangeCount = (int) $this->connection
-                ->fetchOne('SHOW RANGES FROM DATABASE defaultdb');
-
-            $driverMetrics = new CockroachMetrics(
-                rangeCount: $rangeCount,
-                nodeCount: 1,
-                replicationFactor: 1,
-                rangeDistribution: []
-            );
-
-            return new StorageMetrics(
-                userCount: 0,
-                storageDriver: 'cockroach',
-                regionCount: 1,
-                shardCount: $rangeCount,
-                driverMetrics: $driverMetrics
-            );
-
-        } catch (\Throwable $e) {
-            throw new \RuntimeException(
-                'Failed to fetch Cockroach metrics: ' . $e->getMessage(),
-                0,
-                $e
-            );
+            $userCount = (int) $this->connection
+                ->fetchOne('SELECT count(*) FROM users');
+        } catch (\Throwable) {
+            $userCount = 0;
         }
+
+        try {
+            $rangeCount = (int) $this->connection
+                ->fetchOne('SELECT count(*) FROM crdb_internal.ranges_no_leases');
+        } catch (\Throwable) {
+            $rangeCount = 0;
+        }
+
+        try {
+            $nodeCount = (int) $this->connection
+                ->fetchOne('SELECT count(*) FROM crdb_internal.gossip_nodes');
+        } catch (\Throwable) {
+            $nodeCount = 1;
+        }
+
+        $driverMetrics = new CockroachMetrics(
+            rangeCount: $rangeCount,
+            nodeCount: $nodeCount,
+            replicationFactor: 1,
+            rangeDistribution: []
+        );
+
+        return new StorageMetrics(
+            userCount: $userCount,
+            storageDriver: 'cockroach',
+            regionCount: $nodeCount,
+            shardCount: $rangeCount,
+            driverMetrics: $driverMetrics
+        );
     }
 
     public function listShards(): array

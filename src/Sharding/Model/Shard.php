@@ -18,7 +18,37 @@ final class Shard
 {
     public function __construct(
         public readonly string $id,
-        public readonly string $type,   // mongo | cockroach | redis
-        public readonly string $region  // eu | us | asia
-    ) {}
+
+        /**
+         * mongo | cockroach | redis
+         */
+        public readonly string $type,
+
+        /**
+         * eu-west | us-east | asia
+         */
+        public readonly string $region,
+
+        /**
+         * Connection target
+         */
+        public readonly string $dsn,
+
+        /**
+         * Health state
+         */
+        public readonly bool $healthy = true,
+
+        /**
+         * Computed load
+         * 0.0 → 1.0
+         */
+        public readonly float $loadScore = 0.0,
+
+        /**
+         * Free-form metadata
+         */
+        public readonly array $tags = []
+    ) {
+    }
 }

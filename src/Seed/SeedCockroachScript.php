@@ -35,14 +35,18 @@ final class SeedCockroachScript
 
                 $region = $regions[array_rand($regions)];
 
-                $email = "user{$id}@test.com";
+                $email = \sprintf(
+                    'user_%s_%d@test.com',
+                    uniqid(),
+                    $i
+                );
 
                 // format ISO compatible Cockroach (IMPORTANT)
                 $createdAt = date('Y-m-d H:i:s');
 
                 $credits = random_int(0, 10000);
 
-                $values[] = sprintf(
+                $values[] = \sprintf(
                     "('%s', '%s', '%s', %d)",
                     addslashes($email),
                     $region,
