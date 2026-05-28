@@ -33,7 +33,8 @@ final class CreateShardCommand extends Command
         $this
             ->addArgument('id', InputArgument::REQUIRED)
             ->addArgument('type', InputArgument::REQUIRED)
-            ->addArgument('region', InputArgument::REQUIRED);
+            ->addArgument('region', InputArgument::REQUIRED)
+            ->addArgument('dsn', InputArgument::REQUIRED);;
     }
 
     protected function execute(
@@ -43,17 +44,19 @@ final class CreateShardCommand extends Command
         $shard = new Shard(
             id: $input->getArgument('id'),
             type: $input->getArgument('type'),
-            region: $input->getArgument('region')
+            region: $input->getArgument('region'),
+            dsn: $input->getArgument('dsn')
         );
 
         $this->registry->registerShard($shard);
 
         $output->writeln(
-            sprintf(
+            \sprintf(
                 'Shard created: %s (%s / %s)',
                 $shard->id,
                 $shard->type,
-                $shard->region
+                $shard->region,
+                $shard->dsn,
             )
         );
 

@@ -50,7 +50,7 @@ final class LookupTenantCommand extends Command
             return Command::FAILURE;
         }
 
-        $output->writeln(sprintf(
+        $output->writeln(\sprintf(
             'Tenant %s → shard %s (%s / %s)',
             $tenantId,
             $shard->id,

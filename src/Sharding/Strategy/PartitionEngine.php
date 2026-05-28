@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Sharding\Service;
+namespace App\Sharding\Strategy;
 
 use App\Sharding\Contract\ShardRegistryInterface;
 use App\Sharding\Model\Shard;
@@ -137,10 +137,56 @@ final class PartitionEngine
      * @throws \RuntimeException
      * Si aucun shard n'existe.
      */
-    public function assignTenant(
-        string $tenantId,
-        ?string $region = null
-    ): Shard {
-        // code
+ /**
+ * Assigne automatiquement un tenant
+ * à un shard.
+ *
+ * Idempotent :
+ * un tenant déjà assigné
+ * garde toujours le même shard.
+ */
+public function assignTenant(
+    string $tenantId,
+    ?string $region = null
+): Shard {
+
+    // 1. Tenant déjà assigné ?
+    $existing = $this->registry->getShardForTenant($tenantId);
+
+    if ($existing !== null) {
+        return $existing;
     }
+
+    // 2. Liste des shards disponibles
+    $shards = $this->registry->listShards();
+
+    if (empty($shards)) {
+        throw new \RuntimeException(
+            'Aucun shard disponible'
+        );
+    }
+
+    // 3. Choix automatique du shard
+    $chosenShard = $this->strategy->chooseShard(
+        $shards,
+        $tenantId,
+        $region
+    );
+
+    // sécurité
+    if ($chosenShard === null) {
+        throw new \RuntimeException(
+            'Impossible de choisir un shard'
+        );
+    }
+
+    // 4. Persistance mapping
+    $this->registry->assignTenant(
+        $tenantId,
+        $chosenShard->id
+    );
+
+    // 5. Retour
+    return $chosenShard;
+}
 }
